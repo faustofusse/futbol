@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { db } from "@/db";
-import { groups as groupsTable, players as playersTable } from "@/db/schema";
-import { eq } from "drizzle-orm";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,19 +22,11 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const userId = 1;
-  const groups = await db.select().from(groupsTable);
-  const group = groups[0];
-  const players = await db.select().from(playersTable).where(eq(playersTable.group, group.id));
-
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <div className="bg-red-200">
-          { players.map(p => <span>{p.nickname}</span>)}
-        </div>
         {children}
       </body>
     </html>
