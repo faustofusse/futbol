@@ -3,6 +3,8 @@ import { timestamps } from './timestamps';
 import { users } from './users';
 import { groups } from './groups';
 
+export type Player = typeof players.$inferSelect;
+
 export const players = sqliteTable('players', {
 	id: int().primaryKey({ autoIncrement: true }), // .$default(generateId),
 	user: int().references(() => users.id),
