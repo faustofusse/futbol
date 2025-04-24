@@ -1,10 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { NavBar } from "@/components/navbar";
-import { db, groups as groupsTable, groupUsers } from "@/db";
-import { getSession } from "@/lib/sessions";
-import { eq, getTableColumns } from "drizzle-orm";
-import { redirect } from "next/navigation";
 
 import "./globals.css";
 
@@ -28,25 +23,13 @@ export default async function RootLayout({
 }: Readonly<{
     children: React.ReactNode;
 }>) {
-    const session = await getSession();
-    if (!session) redirect('/login');
-
-    const groups = await db
-        .select({ ...getTableColumns(groupsTable) })
-        .from(groupUsers)
-        .where(eq(groupUsers.user, session.userId))
-        .leftJoin(groupsTable, eq(groupUsers.group, groupsTable.id));
-
     return (
         <html lang="en">
             <head>
                 <title>futbol</title>
             </head>
             <body className={`${geistSans.variable} ${geistMono.variable} antialiased`} >
-                <NavBar groups={groups} currentGroup={session.groupId} />
-                <main className="flex flex-col items-center">
-                    {children}
-                </main>
+                {children}
             </body>
         </html>
     );
