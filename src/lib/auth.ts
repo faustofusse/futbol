@@ -1,11 +1,13 @@
 'use server';
 
-import { db, users } from "@/db";
+import { db, Group, groups, groupUsers, users } from "@/db";
 import { eq } from "drizzle-orm";
 import { createSession, deleteSession } from "@/lib/sessions";
 import { redirect } from "next/navigation";
 
 const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+const defaultGroupName = 'Futbol Martes';
 
 export type FormState = { errors?: { email?: string[] } } | undefined;
 
@@ -24,15 +26,33 @@ export async function login(state: FormState, formData: FormData) {
     }
 
     // busco el usuario
-    let user = await db.query.users.findFirst({ where: eq(users.email, email) });
+    let user = await db.select().from(users).where(eq(users.email, email)).then((v) => v.at(0));
+
+    let group: { id: number | null, name: string | null } | undefined;
+
+    // si existe el usuario, busco el grupo
+    if (user) {
+        group = await db
+            .select({ id: groups.id, name: groups.name })
+            .from(groupUsers)
+            .where(eq(groupUsers.user, user.id))
+            .leftJoin(groups, eq(groupUsers.group, groups.id))
+            .then((v) => v.at(0));
+    }
 
     // si no existia, creo uno con el mail que paso
     if (!user) {
         user = await db.insert(users).values({ email }).returning().then((v) => v.at(0));
     }
 
+    // si no tiene grupo, lo creo
+    if (!group) {
+        group = await db.insert(groups).values({ name: defaultGroupName }).returning().then((v) => v.at(0));
+        await db.insert(groupUsers).values({ user: user!.id, group: group!.id! });
+    }
+
     // creo el jwt y lo meto en las cookies
-    await createSession(user!.id);
+    await createSession(user!.id, group!.id!);
 
     // si salio todo bien, me voy a la home
     redirect('/');
