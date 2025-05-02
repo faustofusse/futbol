@@ -71,17 +71,20 @@ function Column({
 
 function Field() {
   return (
-    <img
-      src="pitch.png"
-      draggable="false"
-      className="select-none h-[500px] static"
-    ></img>
+    <div className="flex flex-row gap-4">
+      <img
+        src="pitch.png"
+        draggable="false"
+        className="select-none h-[500px] static"
+      ></img>
+    </div>
   );
 }
 
 export function Lineups({ players }: { players: Player[] }) {
   const [leftTeam, setLeftTeam] = useState(players.slice(0, 5));
   const [rightTeam, setRightTeam] = useState(players.slice(5, 10));
+  const [simpleMode, setSimpleMode] = useState(true);
 
   const swapy = useRef<Swapy>(null);
   const container = useRef<HTMLDivElement>(null);
@@ -101,10 +104,19 @@ export function Lineups({ players }: { players: Player[] }) {
   const amount = 8;
 
   return (
-    <div ref={container} className="mt-10 flex flex-row justify-center gap-5">
-      <Column players={leftTeam} align="left" amount={amount} />
-      <Field />
-      <Column players={rightTeam} align="right" amount={amount} />
+    <div className="flex flex-col justify-center">
+      <button
+        className="cursor-pointer hover:opacity-75"
+        onClick={() => setSimpleMode(!simpleMode)}
+      >
+        Mode {simpleMode ? "'simple'" : "'double'"}
+      </button>
+      <div ref={container} className="mt-10 flex flex-row justify-center gap-5">
+        <Column players={leftTeam} align="left" amount={amount} />
+        <Field />
+        {simpleMode === false ? <Field /> : null}
+        <Column players={rightTeam} align="right" amount={amount} />
+      </div>
     </div>
   );
 }
