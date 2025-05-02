@@ -40,7 +40,7 @@ export default async function RootLayout({
   return (
     <>
       <NavBar groups={groups} currentGroup={session.groupId} />
-      <main className="flex flex-col items-center">{children}</main>
+      <main className="flex flex-col items-center mt-3">{children}</main>
     </>
   );
 }
