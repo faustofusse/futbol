@@ -34,7 +34,7 @@ export function PlayersList({
       <button className="cursor-pointer hover:opacity-75 mb-3" onClick={create}>
         Añadir
       </button>
-      <div className="flex flex-col min-w-70 bg-[#2b2b2b] border-1 rounded-2xl">
+      <div className="flex flex-col min-w-70 border-1 border-[#2b2b2b] rounded-2xl">
         {players.map((p) => (
           <div
             key={p.id}
@@ -42,7 +42,7 @@ export function PlayersList({
               borderBottomWidth:
                 p.id === players[players.length - 1].id ? "0" : "1px",
             }}
-            className="flex flex-row justify-between p-3 border-b-1"
+            className="flex flex-row justify-between p-3 border-b-1 border-[#2b2b2b]"
           >
             <span>{p.nickname}</span>
             <button
