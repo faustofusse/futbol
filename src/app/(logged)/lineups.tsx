@@ -1,11 +1,13 @@
 "use client";
 
-import { Player } from "@/db";
+import { Player, Match, Team, TeamExpanded } from "@/db";
+import { Nullable } from "@/lib/utils";
 import { useEffect, useState, useRef } from "react";
 import { createSwapy, Swapy } from "swapy";
 import { twJoin, twMerge } from "tailwind-merge";
+import Image from "next/image";
 
-function PlayerItem({ player }: { player: Player }) {
+function PlayerItem({ player }: { player: Nullable<Player> }) {
   return (
     <div
       data-swapy-item={player.id}
@@ -52,7 +54,7 @@ function Column({
   align,
 }: {
   amount: number;
-  players: Player[];
+  players: Nullable<Player>[];
   align: "left" | "right";
 }) {
   return (
@@ -71,7 +73,7 @@ function Column({
 
 function Field() {
   return (
-    <div className="flex flex-row gap-4">
+    <div className="flex flex-row gap-4 rounded-xl shadow-amber-300-2xl">
       <img
         src="pitch.png"
         draggable="false"
@@ -81,10 +83,20 @@ function Field() {
   );
 }
 
-export function Lineups({ players }: { players: Player[] }) {
+export function Lineups({
+  match,
+  teams,
+  players,
+}: {
+  match: Match;
+  teams: TeamExpanded[];
+  players: Player[];
+}) {
   const [leftTeam, setLeftTeam] = useState(players.slice(0, 5));
   const [rightTeam, setRightTeam] = useState(players.slice(5, 10));
   const [simpleMode, setSimpleMode] = useState(true);
+  const [playerAmount, setPlayerAmount] = useState(8);
+  const options = [5, 6, 7, 8, 9, 10, 11];
 
   const swapy = useRef<Swapy>(null);
   const container = useRef<HTMLDivElement>(null);
@@ -101,21 +113,61 @@ export function Lineups({ players }: { players: Player[] }) {
     };
   }, []);
 
-  const amount = 8;
-
   return (
-    <div className="flex flex-col justify-center">
-      <button
-        className="cursor-pointer hover:opacity-75"
-        onClick={() => setSimpleMode(!simpleMode)}
-      >
-        Mode {simpleMode ? "'simple'" : "'double'"}
-      </button>
-      <div ref={container} className="mt-10 flex flex-row justify-center gap-5">
-        <Column players={leftTeam} align="left" amount={amount} />
+    <div className="flex flex-col justify-center items-center">
+      <div className="flex flex-row gap-4">
+        <div className="flex items-center rounded-md bg-gray-900 text-white gap-0.5">
+          {options.map((value) => (
+            <label key={value}>
+              <input
+                type="radio"
+                name="type"
+                value={value}
+                defaultChecked={playerAmount === value}
+                onClick={() => setPlayerAmount(value)}
+                className="peer hidden"
+              />
+              <span
+                className={`${
+                  value === playerAmount
+                    ? "peer-checked:bg-white peer-checked:text-black rounded-md p-2 duration-500"
+                    : "hover:bg-gray-800 cursor-pointer rounded-md p-2 duration-500"
+                }`}
+              >
+                F{value}
+              </span>
+            </label>
+          ))}
+        </div>
+        <button
+          className="flex flex-row rounded-md bg-gray-900 text-white border border-gray-900 gap-0.5 p-2 cursor-pointer hover:opacity-75"
+          onClick={() => setSimpleMode(!simpleMode)}
+        >
+          <img
+            src="https://img.icons8.com/?size=100&id=cBFvS9yWRYSZ&format=png&color=000000"
+            className="h-7 rotate-90"
+          ></img>
+          {!simpleMode ? (
+            <img
+              src="https://img.icons8.com/?size=100&id=cBFvS9yWRYSZ&format=png&color=000000"
+              className="h-7 rotate-90"
+            ></img>
+          ) : null}
+        </button>
+      </div>
+      <div ref={container} className="mt-4 flex flex-row justify-center gap-5">
+        <Column
+          players={teams.at(0)?.players ?? []}
+          align="left"
+          amount={playerAmount}
+        />
         <Field />
         {simpleMode === false ? <Field /> : null}
-        <Column players={rightTeam} align="right" amount={amount} />
+        <Column
+          players={teams.at(1)?.players ?? []}
+          align="right"
+          amount={playerAmount}
+        />
       </div>
     </div>
   );
