@@ -1,25 +1,64 @@
-import { int, sqliteTable, text, primaryKey } from 'drizzle-orm/sqlite-core';
-import { timestamps } from './timestamps';
-import { groups } from './groups';
-import { players } from './players';
+import {
+  int,
+  sqliteTable,
+  text,
+  primaryKey,
+  foreignKey,
+  real,
+} from "drizzle-orm/sqlite-core";
+import { Nullable } from "@/lib/utils";
+import { timestamps } from "./timestamps";
+import { groups } from "./groups";
+import { Player, players } from "./players";
 
-export const matches = sqliteTable('matches', {
-	id: int().primaryKey({ autoIncrement: true }), // .$default(generateId),
-    group: int().references(() => groups.id),
-    date: int(),
-	...timestamps,
+export type Match = typeof matches.$inferSelect;
+export type Team = typeof teams.$inferSelect;
+export type TeamPlayer = typeof teamPlayers.$inferSelect;
+export type TeamPlayerExpanded = Nullable<TeamPlayer & Player>;
+export type TeamExpanded = Team & {
+  players?: TeamPlayerExpanded[];
+};
+
+export const matches = sqliteTable("matches", {
+  id: int().primaryKey({ autoIncrement: true }), // .$default(generateId),
+  group: int()
+    .notNull()
+    .references(() => groups.id),
+  date: int(),
+  playerAmount: int("player_amount").notNull(),
+  ...timestamps,
 });
 
-export const teams = sqliteTable('teams', {
-    match: int().references(() => matches.id),
+export const teams = sqliteTable(
+  "teams",
+  {
+    id: int().notNull(),
     name: text().notNull(),
-}, (table) => [
-    primaryKey({ columns: [table.match, table.name] })
-]);
+    match: int()
+      .notNull()
+      .references(() => matches.id),
+  },
+  (table) => [primaryKey({ columns: [table.match, table.id] })]
+);
 
-export const teamPlayers = sqliteTable('team_players', {
-    team: int().references(() => matches.id),
-    player: int().references(() => players.id),
-}, (table) => [
-    primaryKey({ columns: [table.team, table.player] })
-]);
+export const teamPlayers = sqliteTable(
+  "team_players",
+  {
+    team: int().notNull(),
+    match: int().notNull(),
+    player: int()
+      .notNull()
+      .references(() => players.id),
+    index: int().notNull(),
+    x: real(),
+    y: real(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.match, table.team, table.player] }),
+    foreignKey({
+      name: "team_players_teams_fk",
+      columns: [table.match, table.team],
+      foreignColumns: [teams.match, teams.id],
+    }),
+  ]
+);
