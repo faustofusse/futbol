@@ -1,4 +1,5 @@
 "use server";
+"use server";
 
 import { db, players, matches, teams, teamPlayers } from "@/db";
 import { and, eq, isNull } from "drizzle-orm";

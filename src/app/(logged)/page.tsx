@@ -3,6 +3,7 @@ import { Lineups } from "./lineups";
 import { getTeamPlayers } from "./players/actions";
 import { getPlayers } from "./players/actions";
 import { getCurrentMatch, createMatch } from "./matches/actions";
+import { getCurrentMatch, createMatch } from "./matches/actions";
 
 export default async function Home() {
   const session = await getSession();
