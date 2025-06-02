@@ -1,11 +1,12 @@
 import { getSession } from "@/lib/sessions";
-import { getPlayers, getTeams } from "./actions";
+import { getPlayers, getTeamPlayers, getTeams } from "./actions";
 import { PlayersList } from "./list";
 
 export default async function Players() {
   const session = await getSession();
   const players = await getPlayers(session?.groupId ?? 0);
   const teams = await getTeams(9);
+  const teamPlayers = await getTeamPlayers(9);
 
   return (
     <>
@@ -13,6 +14,7 @@ export default async function Players() {
         initialPlayers={players}
         groupId={session!.groupId}
         teams={teams}
+        teamPlayers={teamPlayers}
       />
     </>
   );

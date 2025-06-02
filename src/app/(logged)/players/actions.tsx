@@ -1,5 +1,4 @@
 "use server";
-"use server";
 
 import { db, players, matches, teams, teamPlayers } from "@/db";
 import { and, eq, isNull } from "drizzle-orm";
@@ -20,6 +19,10 @@ export async function deletePlayer(id: number) {
   await db.delete(teamPlayers).where(eq(teamPlayers.player, id));
 }
 
+export async function deleteTeamPlayer(id: number) {
+  await db.delete(teamPlayers).where(eq(teamPlayers.player, id));
+}
+
 export async function getPlayers(groupId: number) {
   return db
     .select()
@@ -34,14 +37,15 @@ export async function getTeamPlayers(matchId: number) {
     .orderBy(teamPlayers.team);
 
   const teamGroups = new Map<number, typeof team_players>();
-
   for (const teamPlayer of team_players) {
     if (!teamGroups.has(teamPlayer.team)) {
       teamGroups.set(teamPlayer.team, []);
     }
     teamGroups.get(teamPlayer.team)!.push(teamPlayer);
   }
-  const result = Array.from(teamGroups.values());
+  const team0 = teamGroups.get(0) ?? [];
+  const team1 = teamGroups.get(1) ?? [];
+  const result = [team0, team1];
 
   return result;
 }
@@ -59,7 +63,21 @@ export async function assignPlayer(
     await db.select().from(matches).where(eq(matches.group, groupId)).limit(1)
   )[0].id;
 
-  await db
-    .insert(teamPlayers)
-    .values({ team: teamId, match: matchId, player: playerId, index: 0 });
+  const playerMatch = (
+    await db
+      .select()
+      .from(teamPlayers)
+      .where(eq(teamPlayers.player, playerId))
+      .limit(1)
+  )[0];
+  if (playerMatch) {
+    await db
+      .update(teamPlayers)
+      .set({ team: teamId })
+      .where(eq(teamPlayers.player, playerId));
+  } else {
+    await db
+      .insert(teamPlayers)
+      .values({ team: teamId, match: matchId, player: playerId, index: 0 });
+  }
 }

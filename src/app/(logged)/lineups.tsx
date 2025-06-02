@@ -2,12 +2,11 @@
 
 import { Player, TeamPlayer, Match, Team, TeamExpanded } from "@/db";
 import { Nullable } from "@/lib/utils";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Dispatch, SetStateAction } from "react";
 import { createSwapy, Swapy } from "swapy";
-import { twJoin, twMerge } from "tailwind-merge";
-import Image from "next/image";
+import { deleteTeamPlayer } from "./players/actions";
 
-function PlayerItem({ player }: { player: Nullable<Player> }) {
+function PlayerItem({ player }: { player: Player }) {
   return (
     <div
       data-swapy-item={player.id}
@@ -65,13 +64,49 @@ function Column({
     <div className="flex flex-col">
       <h1 className={team.id === 0 ? "flex justify-end" : ""}>{team.name}</h1>
       {Array.from({ length: amount }, (_, i) => {
+        const [panelVisibility, setPanelVisibility] = useState(false);
+        const [teamList, setTeamList] = useState(teamPlayers);
         const player = players.find((player) => {
-          return player.id === teamPlayers?.at(i)?.player;
+          return player.id === teamList?.at(i)?.player;
         });
         return (
-          <PlayerSlot key={i} index={i} align={align}>
-            {player && <PlayerItem player={player} />}
-          </PlayerSlot>
+          <div
+            className="flex"
+            onMouseOver={() => {
+              setPanelVisibility(true);
+            }}
+            onMouseLeave={() => {
+              setPanelVisibility(false);
+            }}
+            key={i}
+          >
+            <PlayerSlot key={i} index={i} align={align}>
+              {player && <PlayerItem player={player} />}
+            </PlayerSlot>
+            {player ? (
+              <div
+                className={
+                  panelVisibility
+                    ? "absolute bg-gray-800 w-40 h-20 rounded-2xl p-2 z-1000 inline-block"
+                    : "hidden"
+                }
+              >
+                <button
+                  onClick={() => {
+                    deleteTeamPlayer(player.id);
+                    setTeamList(
+                      teamList.filter((team) => {
+                        team.player === player.id;
+                      })
+                    );
+                  }}
+                  className="rounded-md bg-gray-900 text-white border border-red-900 p-2 cursor-pointer hover:opacity-75 hover:bg-red-900"
+                >
+                  Remover
+                </button>
+              </div>
+            ) : null}
+          </div>
         );
       })}
     </div>
@@ -89,6 +124,8 @@ function Field() {
     </div>
   );
 }
+
+function removeplayer() {}
 
 export function Lineups({
   match,
