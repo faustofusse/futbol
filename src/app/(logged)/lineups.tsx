@@ -4,7 +4,7 @@ import { Player, TeamPlayer, Match, Team, TeamExpanded } from "@/db";
 import { Nullable } from "@/lib/utils";
 import { useEffect, useState, useRef, Dispatch, SetStateAction } from "react";
 import { createSwapy, Swapy } from "swapy";
-import { deleteTeamPlayer } from "./players/actions";
+import { deleteTeamPlayer, assignPlayer } from "./players/actions";
 
 function PlayerItem({ player }: { player: Player }) {
   return (
@@ -24,10 +24,16 @@ function PlayerSlot({
   children,
   align,
   index,
+  playerId,
+  teamId,
+  group,
 }: {
   index: number;
   align: "left" | "right";
   children: React.ReactNode;
+  playerId: number;
+  teamId: number;
+  group: number;
 }) {
   return (
     <div className="relative group" data-align={align}>
@@ -53,19 +59,21 @@ function Column({
   players,
   align,
   team,
+  group,
 }: {
   amount: number;
   teamPlayers: Nullable<TeamPlayer>[];
   players: Player[];
   align: "left" | "right";
   team: Team;
+  group: number;
 }) {
+  const [teamList, setTeamList] = useState(teamPlayers);
+  const [panelVisibility, setPanelVisibility] = useState(-1);
   return (
     <div className="flex flex-col">
       <h1 className={team.id === 0 ? "flex justify-end" : ""}>{team.name}</h1>
       {Array.from({ length: amount }, (_, i) => {
-        const [panelVisibility, setPanelVisibility] = useState(false);
-        const [teamList, setTeamList] = useState(teamPlayers);
         const player = players.find((player) => {
           return player.id === teamList?.at(i)?.player;
         });
@@ -73,21 +81,30 @@ function Column({
           <div
             className="flex"
             onMouseOver={() => {
-              setPanelVisibility(true);
+              setPanelVisibility(i);
             }}
             onMouseLeave={() => {
-              setPanelVisibility(false);
+              setPanelVisibility(-1);
             }}
             key={i}
           >
-            <PlayerSlot key={i} index={i} align={align}>
+            <PlayerSlot
+              key={i}
+              index={i}
+              align={align}
+              teamId={team.id}
+              playerId={player?.id || -1}
+              group={group}
+            >
               {player && <PlayerItem player={player} />}
             </PlayerSlot>
             {player ? (
               <div
                 className={
-                  panelVisibility
-                    ? "absolute bg-gray-800 w-40 h-20 rounded-2xl p-2 z-1000 inline-block"
+                  panelVisibility === i && team.id === 0
+                    ? "absolute bg-gray-800 rounded-2xl p-2 z-1000 inline-block ml-50"
+                    : panelVisibility === i && team.id === 1
+                    ? "absolute bg-gray-800 rounded-2xl p-2 z-1000 inline-block ml-20"
                     : "hidden"
                 }
               >
@@ -96,7 +113,7 @@ function Column({
                     deleteTeamPlayer(player.id);
                     setTeamList(
                       teamList.filter((team) => {
-                        team.player === player.id;
+                        return team.player === player.id;
                       })
                     );
                   }}
@@ -132,11 +149,13 @@ export function Lineups({
   teams,
   teamPlayers,
   players,
+  group,
 }: {
   match: Match;
   teams: TeamExpanded[];
   teamPlayers: TeamPlayer[][];
   players: Player[];
+  group: number;
 }) {
   const [leftTeam, setLeftTeam] = useState(teamPlayers[0]);
   const [rightTeam, setRightTeam] = useState(teamPlayers[1]);
@@ -151,6 +170,17 @@ export function Lineups({
     if (container.current) {
       swapy.current = createSwapy(container.current, {
         // manualSwap: true
+      });
+      swapy.current.onSwap((event) => {
+        const item = Number(event.draggingItem);
+        const toSlot = event.toSlot;
+
+        if (toSlot.includes("left")) {
+          assignPlayer(group, item, 0);
+        }
+        if (toSlot.includes("right")) {
+          assignPlayer(group, item, 1);
+        }
       });
     }
 
@@ -208,6 +238,7 @@ export function Lineups({
           align="left"
           amount={playerAmount}
           team={teams[0]}
+          group={group}
         />
         <Field />
         {simpleMode === false ? <Field /> : null}
@@ -217,6 +248,7 @@ export function Lineups({
           align="right"
           amount={playerAmount}
           team={teams[1]}
+          group={group}
         />
       </div>
     </div>

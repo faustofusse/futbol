@@ -16,6 +16,7 @@ export default async function Home() {
       teams={teams}
       teamPlayers={teamPlayers}
       players={players}
+      group={session?.groupId ?? 0}
     />
   );
 }

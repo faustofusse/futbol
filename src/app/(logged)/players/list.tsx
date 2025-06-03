@@ -3,7 +3,6 @@
 import { Player, TeamPlayer, Team, db } from "@/db";
 import { useState, useRef } from "react";
 import { createPlayer, deletePlayer, assignPlayer } from "./actions";
-import { and, eq } from "drizzle-orm";
 
 export function PlayersList({
   initialPlayers,
