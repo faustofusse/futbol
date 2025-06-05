@@ -52,6 +52,7 @@ export const teamPlayers = sqliteTable(
     index: int().notNull(),
     x: real(),
     y: real(),
+    onPitch: int("onPitch", { mode: "boolean" }).notNull().default(false),
   },
   (table) => [
     primaryKey({ columns: [table.match, table.team, table.player] }),

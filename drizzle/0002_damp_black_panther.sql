@@ -1,0 +1,1 @@
+ALTER TABLE `team_players` RENAME COLUMN "is_active" TO "onPitch";

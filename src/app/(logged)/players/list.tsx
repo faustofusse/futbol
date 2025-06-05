@@ -113,7 +113,7 @@ export function PlayersList({
   }
 
   async function assign(id: number, teamId: number) {
-    assignPlayer(groupId, id, teamId);
+    assignPlayer(groupId, id, -1, teamId);
 
     const nick = players.find((player) => {
       return player.id === id;

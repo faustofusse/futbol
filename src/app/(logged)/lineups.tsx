@@ -12,8 +12,8 @@ function PlayerItem({ player }: { player: Player }) {
       data-swapy-item={player.id}
       className="group flex justify-start items-center gap-2 p-2 cursor-grab data-swapy-dragging:cursor-grabbing group-data-[align=left]:flex-row group-data-[align=right]:flex-row-reverse"
     >
-      <span className="select-none group-data-swapy-dragging:font-bold">
-        {player.nickname}
+      <span className="select-none group-data-swapy-dragging:font-bold text-2xs">
+        {player.nickname?.toUpperCase()}
       </span>
       <div className="rounded-4xl h-5 bg-red-700 aspect-square group-data-swapy-dragging:border-yellow-300 group-data-swapy-dragging:border-2"></div>
     </div>
@@ -60,6 +60,7 @@ function Column({
   align,
   team,
   group,
+  simpleMode,
 }: {
   amount: number;
   teamPlayers: Nullable<TeamPlayer>[];
@@ -67,15 +68,27 @@ function Column({
   align: "left" | "right";
   team: Team;
   group: number;
+  simpleMode: boolean;
 }) {
-  const [teamList, setTeamList] = useState(teamPlayers);
+  const [teamList, setTeamList] = useState(
+    teamPlayers.filter((tp) => {
+      return tp.onPitch === false;
+    })
+  );
   const [panelVisibility, setPanelVisibility] = useState(-1);
   return (
-    <div className="flex flex-col">
-      <h1 className={team.id === 0 ? "flex justify-end" : ""}>{team.name}</h1>
+    <div className={simpleMode ? "flex flex-col" : "flex flex-col mt-15"}>
+      {simpleMode ? (
+        <h1 className={team.id === 0 ? "flex justify-end text-xl" : "text-xl"}>
+          {team?.name?.toUpperCase()}
+        </h1>
+      ) : null}
       {Array.from({ length: amount }, (_, i) => {
+        const teamPlayer = teamList.find((tp) => {
+          return tp.index === i;
+        });
         const player = players.find((player) => {
-          return player.id === teamList?.at(i)?.player;
+          return player.id === teamPlayer?.player;
         });
         return (
           <div
@@ -130,19 +143,16 @@ function Column({
   );
 }
 
-function Field() {
+function Field({ simpleMode, team }: { simpleMode: boolean; team: Team }) {
   return (
-    <div className="flex flex-row gap-4 rounded-xl shadow-amber-300-2xl">
-      <img
-        src="pitch.png"
-        draggable="false"
-        className="select-none h-[500px] static"
-      ></img>
+    <div>
+      {!simpleMode ? (
+        <h1 className="text-xl mb-2">{team?.name?.toUpperCase()}</h1>
+      ) : null}
+      <div className="flex relative rounded-[19px] border-2 inset-shadow-blue-950/100 border-white shadow-amber-300-2xl h-[500px] w-[387.55px] bg-contain bg-[url('/pitch.png')]"></div>
     </div>
   );
 }
-
-function removeplayer() {}
 
 export function Lineups({
   match,
@@ -172,14 +182,34 @@ export function Lineups({
         // manualSwap: true
       });
       swapy.current.onSwap((event) => {
-        const item = Number(event.draggingItem);
+        const player = Number(event.draggingItem);
+        const affected = Number(event.swappedWithItem);
+        const fromSlot = event.fromSlot;
         const toSlot = event.toSlot;
+        const playerIndex = Number(toSlot?.split("-")[1]);
+        const affectedIndex = Number(fromSlot?.split("-")[1]);
 
+        let playerTeam;
+        let affectedTeam;
         if (toSlot.includes("left")) {
-          assignPlayer(group, item, 0);
+          playerTeam = 0;
+          if (fromSlot.includes("right")) {
+            affectedTeam = 1;
+          } else {
+            affectedTeam = 0;
+          }
+        } else {
+          playerTeam = 1;
+          if (fromSlot.includes("left")) {
+            affectedTeam = 0;
+          } else {
+            affectedTeam = 1;
+          }
         }
-        if (toSlot.includes("right")) {
-          assignPlayer(group, item, 1);
+
+        assignPlayer(group, player, playerIndex, playerTeam);
+        if (affected) {
+          assignPlayer(group, affected, affectedIndex, affectedTeam);
         }
       });
     }
@@ -239,9 +269,14 @@ export function Lineups({
           amount={playerAmount}
           team={teams[0]}
           group={group}
+          simpleMode={simpleMode}
         />
-        <Field />
-        {simpleMode === false ? <Field /> : null}
+        <div className="mt-4 flex flex-row justify-center gap-20">
+          <Field simpleMode={simpleMode} team={teams[0]} />
+          {simpleMode === false ? (
+            <Field simpleMode={simpleMode} team={teams[1]} />
+          ) : null}
+        </div>
         <Column
           teamPlayers={rightTeam}
           players={players}
@@ -249,6 +284,7 @@ export function Lineups({
           amount={playerAmount}
           team={teams[1]}
           group={group}
+          simpleMode={simpleMode}
         />
       </div>
     </div>

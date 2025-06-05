@@ -57,27 +57,43 @@ export async function getTeams(matchId: number) {
 export async function assignPlayer(
   groupId: number,
   playerId: number,
+  index: number,
   teamId: number
 ) {
-  const matchId = (
+  const match = (
     await db.select().from(matches).where(eq(matches.group, groupId)).limit(1)
-  )[0].id;
+  )[0];
 
-  const playerMatch = (
+  const player = (
     await db
       .select()
       .from(teamPlayers)
       .where(eq(teamPlayers.player, playerId))
       .limit(1)
   )[0];
-  if (playerMatch) {
+  if (index === -1) {
+    const teamPlayers = await getTeamPlayers(match.id);
+    const takenPositions = new Set(teamPlayers[teamId].map((tp) => tp.index));
+    for (let i = 0; i < match.playerAmount; i++) {
+      if (!takenPositions.has(i)) {
+        index = i;
+        console.log(i);
+        break;
+      }
+    }
+  }
+  if (player) {
     await db
       .update(teamPlayers)
-      .set({ team: teamId })
+      .set({ team: teamId, index: index })
       .where(eq(teamPlayers.player, playerId));
   } else {
-    await db
-      .insert(teamPlayers)
-      .values({ team: teamId, match: matchId, player: playerId, index: 0 });
+    await db.insert(teamPlayers).values({
+      team: teamId,
+      match: match.id,
+      player: playerId,
+      index: index,
+      onPitch: false,
+    });
   }
 }
