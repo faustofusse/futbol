@@ -7,12 +7,71 @@ import { createSwapy, Swapy } from "swapy";
 import { deleteTeamPlayer, assignPlayer } from "./players/actions";
 import { changeMatchPA } from "./matches/actions";
 
-function PlayerItem({ player }: { player: Player }) {
+function PlayerItem({
+  player,
+  panelVisibility,
+  team,
+  i,
+  teamList,
+  setTeamList,
+}: {
+  player: Player;
+  panelVisibility: number;
+  team: Team;
+  i: number;
+  teamList: Nullable<{
+    player: number;
+    match: number;
+    team: number;
+    index: number;
+    x: number | null;
+    y: number | null;
+    onPitch: boolean;
+  }>[];
+  setTeamList: Dispatch<
+    SetStateAction<
+      Nullable<{
+        player: number;
+        match: number;
+        index: number;
+        team: number;
+        x: number | null;
+        y: number | null;
+        onPitch: boolean;
+      }>[]
+    >
+  >;
+}) {
   return (
     <div
       data-swapy-item={player.id}
       className="group flex justify-start items-center gap-2 p-2 cursor-grab data-swapy-dragging:cursor-grabbing group-data-[align=left]:flex-row group-data-[align=right]:flex-row-reverse"
     >
+      {player ? (
+        <div
+          className={
+            panelVisibility === i && team.id === 0
+              ? "absolute bg-gray-800 rounded-2xl p-2 z-1000 inline-block ml-25"
+              : panelVisibility === i && team.id === 1
+              ? "absolute bg-gray-800 rounded-2xl p-2 z-1000 inline-block mr-25"
+              : "hidden"
+          }
+        >
+          <button
+            onClick={() => {
+              deleteTeamPlayer(player.id);
+              setTeamList(
+                teamList.filter((team) => {
+                  return team.player === player.id;
+                })
+              );
+            }}
+            className="rounded-md bg-gray-900 text-white border border-red-900 p-2 cursor-pointer hover:opacity-75 hover:bg-red-900"
+          >
+            Remover
+          </button>
+        </div>
+      ) : null}
       <span className="select-none group-data-swapy-dragging:font-bold text-2xs">
         {player.nickname?.toUpperCase()}
       </span>
@@ -100,6 +159,9 @@ function Column({
             onMouseLeave={() => {
               setPanelVisibility(-1);
             }}
+            onDragCapture={() => {
+              setPanelVisibility(-1);
+            }}
             key={i}
           >
             <PlayerSlot
@@ -110,33 +172,17 @@ function Column({
               playerId={player?.id || -1}
               group={group}
             >
-              {player && <PlayerItem player={player} />}
+              {player && (
+                <PlayerItem
+                  player={player}
+                  panelVisibility={panelVisibility}
+                  team={team}
+                  i={i}
+                  teamList={teamList}
+                  setTeamList={setTeamList}
+                />
+              )}
             </PlayerSlot>
-            {player ? (
-              <div
-                className={
-                  panelVisibility === i && team.id === 0
-                    ? "absolute bg-gray-800 rounded-2xl p-2 z-1000 inline-block ml-50"
-                    : panelVisibility === i && team.id === 1
-                    ? "absolute bg-gray-800 rounded-2xl p-2 z-1000 inline-block ml-20"
-                    : "hidden"
-                }
-              >
-                <button
-                  onClick={() => {
-                    deleteTeamPlayer(player.id);
-                    setTeamList(
-                      teamList.filter((team) => {
-                        return team.player === player.id;
-                      })
-                    );
-                  }}
-                  className="rounded-md bg-gray-900 text-white border border-red-900 p-2 cursor-pointer hover:opacity-75 hover:bg-red-900"
-                >
-                  Remover
-                </button>
-              </div>
-            ) : null}
           </div>
         );
       })}
