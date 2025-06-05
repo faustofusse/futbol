@@ -5,6 +5,7 @@ import { Nullable } from "@/lib/utils";
 import { useEffect, useState, useRef, Dispatch, SetStateAction } from "react";
 import { createSwapy, Swapy } from "swapy";
 import { deleteTeamPlayer, assignPlayer } from "./players/actions";
+import { changeMatchPA } from "./matches/actions";
 
 function PlayerItem({ player }: { player: Player }) {
   return (
@@ -154,6 +155,15 @@ function Field({ simpleMode, team }: { simpleMode: boolean; team: Team }) {
   );
 }
 
+function handlePlayerAmount(
+  setPlayerAmount: Dispatch<SetStateAction<number>>,
+  value: number,
+  matchId: number
+) {
+  setPlayerAmount(value);
+  changeMatchPA(matchId, value);
+}
+
 export function Lineups({
   match,
   teams,
@@ -170,7 +180,7 @@ export function Lineups({
   const [leftTeam, setLeftTeam] = useState(teamPlayers[0]);
   const [rightTeam, setRightTeam] = useState(teamPlayers[1]);
   const [simpleMode, setSimpleMode] = useState(true);
-  const [playerAmount, setPlayerAmount] = useState(8);
+  const [playerAmount, setPlayerAmount] = useState(match.playerAmount);
   const options = [5, 6, 7, 8, 9, 10, 11];
 
   const swapy = useRef<Swapy>(null);
@@ -230,7 +240,9 @@ export function Lineups({
                 name="type"
                 value={value}
                 defaultChecked={playerAmount === value}
-                onClick={() => setPlayerAmount(value)}
+                onClick={() =>
+                  handlePlayerAmount(setPlayerAmount, value, match.id)
+                }
                 className="peer hidden"
               />
               <span

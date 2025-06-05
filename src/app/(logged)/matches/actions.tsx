@@ -116,3 +116,10 @@ export async function deleteMatch(id: number) {
     .set({ deleted: Math.floor(Date.now() / 1000) })
     .where(eq(matches.id, id));
 }
+
+export async function changeMatchPA(id: number, newAmount: number) {
+  await db
+    .update(matches)
+    .set({ playerAmount: newAmount })
+    .where(eq(matches.id, id));
+}
