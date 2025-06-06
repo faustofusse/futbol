@@ -50,10 +50,6 @@ export async function getTeamPlayers(matchId: number) {
   return result;
 }
 
-export async function getTeams(matchId: number) {
-  return db.select().from(teams).where(eq(teams.match, matchId));
-}
-
 export async function assignPlayer(
   groupId: number,
   playerId: number,

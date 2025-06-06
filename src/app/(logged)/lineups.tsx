@@ -10,14 +10,14 @@ import { changeMatchPA } from "./matches/actions";
 function PlayerItem({
   player,
   panelVisibility,
-  team,
   i,
+  teamPlayer,
   teamList,
   setTeamList,
 }: {
   player: Player;
   panelVisibility: number;
-  team: Team;
+  teamPlayer: Nullable<TeamPlayer> | undefined;
   i: number;
   teamList: Nullable<{
     player: number;
@@ -50,9 +50,9 @@ function PlayerItem({
       {player ? (
         <div
           className={
-            panelVisibility === i && team.id === 0
+            panelVisibility === i && teamPlayer?.team === 0
               ? "absolute bg-gray-800 rounded-2xl p-2 z-1000 inline-block ml-25"
-              : panelVisibility === i && team.id === 1
+              : panelVisibility === i && teamPlayer?.team === 1
               ? "absolute bg-gray-800 rounded-2xl p-2 z-1000 inline-block mr-25"
               : "hidden"
           }
@@ -84,16 +84,10 @@ function PlayerSlot({
   children,
   align,
   index,
-  playerId,
-  teamId,
-  group,
 }: {
   index: number;
   align: "left" | "right";
   children: React.ReactNode;
-  playerId: number;
-  teamId: number;
-  group: number;
 }) {
   return (
     <div className="relative group" data-align={align}>
@@ -119,7 +113,6 @@ function Column({
   players,
   align,
   team,
-  group,
   simpleMode,
 }: {
   amount: number;
@@ -127,7 +120,6 @@ function Column({
   players: Player[];
   align: "left" | "right";
   team: Team;
-  group: number;
   simpleMode: boolean;
 }) {
   const [teamList, setTeamList] = useState(
@@ -137,7 +129,7 @@ function Column({
   );
   const [panelVisibility, setPanelVisibility] = useState(-1);
   return (
-    <div className={simpleMode ? "flex flex-col" : "flex flex-col mt-15"}>
+    <div className={simpleMode ? "flex flex-col mt-3" : "flex flex-col mt-19"}>
       {simpleMode ? (
         <h1 className={team.id === 0 ? "flex justify-end text-xl" : "text-xl"}>
           {team?.name?.toUpperCase()}
@@ -164,19 +156,12 @@ function Column({
             }}
             key={i}
           >
-            <PlayerSlot
-              key={i}
-              index={i}
-              align={align}
-              teamId={team.id}
-              playerId={player?.id || -1}
-              group={group}
-            >
+            <PlayerSlot key={i} index={i} align={align}>
               {player && (
                 <PlayerItem
+                  teamPlayer={teamPlayer}
                   player={player}
                   panelVisibility={panelVisibility}
-                  team={team}
                   i={i}
                   teamList={teamList}
                   setTeamList={setTeamList}
@@ -225,7 +210,7 @@ export function Lineups({
 }) {
   const [leftTeam, setLeftTeam] = useState(teamPlayers[0]);
   const [rightTeam, setRightTeam] = useState(teamPlayers[1]);
-  const [simpleMode, setSimpleMode] = useState(true);
+  const [simpleMode, setSimpleMode] = useState(false);
   const [playerAmount, setPlayerAmount] = useState(match.playerAmount);
   const options = [5, 6, 7, 8, 9, 10, 11];
 
@@ -238,7 +223,7 @@ export function Lineups({
         // manualSwap: true
       });
       swapy.current.onSwap((event) => {
-        const player = Number(event.draggingItem);
+        const playerId = Number(event.draggingItem);
         const affected = Number(event.swappedWithItem);
         const fromSlot = event.fromSlot;
         const toSlot = event.toSlot;
@@ -251,19 +236,39 @@ export function Lineups({
           playerTeam = 0;
           if (fromSlot.includes("right")) {
             affectedTeam = 1;
+            const player = rightTeam.find((p) => {
+              return p.player === playerId;
+            });
+            if (player) {
+              player.team = 0;
+              console.log(event);
+              console.log(leftTeam);
+              setLeftTeam([...leftTeam, player]);
+              console.log(leftTeam);
+            }
           } else {
             affectedTeam = 0;
           }
         } else {
           playerTeam = 1;
+          setRightTeam(rightTeam);
           if (fromSlot.includes("left")) {
             affectedTeam = 0;
+            const player = leftTeam.find((p) => {
+              return p.player === playerId;
+            });
+            if (player) {
+              player.team = 1;
+              console.log(event);
+              console.log(rightTeam);
+              setRightTeam([...rightTeam, player]);
+              console.log(rightTeam);
+            }
           } else {
             affectedTeam = 1;
           }
         }
-
-        assignPlayer(group, player, playerIndex, playerTeam);
+        assignPlayer(group, playerId, playerIndex, playerTeam);
         if (affected) {
           assignPlayer(group, affected, affectedIndex, affectedTeam);
         }
@@ -294,8 +299,8 @@ export function Lineups({
               <span
                 className={`${
                   value === playerAmount
-                    ? "peer-checked:bg-white peer-checked:text-black rounded-md p-2 duration-500"
-                    : "hover:bg-gray-800 cursor-pointer rounded-md p-2 duration-500"
+                    ? "peer-checked:bg-white peer-checked:text-black rounded-md p-3 duration-500"
+                    : "hover:bg-gray-800 cursor-pointer rounded-md p-3 duration-500"
                 }`}
               >
                 F{value}
@@ -326,7 +331,6 @@ export function Lineups({
           align="left"
           amount={playerAmount}
           team={teams[0]}
-          group={group}
           simpleMode={simpleMode}
         />
         <div className="mt-4 flex flex-row justify-center gap-20">
@@ -341,7 +345,6 @@ export function Lineups({
           align="right"
           amount={playerAmount}
           team={teams[1]}
-          group={group}
           simpleMode={simpleMode}
         />
       </div>
