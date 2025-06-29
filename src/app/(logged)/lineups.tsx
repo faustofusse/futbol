@@ -51,9 +51,9 @@ function PlayerItem({
         <div
           className={
             panelVisibility === i && teamPlayer?.team === 0
-              ? "absolute bg-gray-800 rounded-2xl p-2 z-1000 inline-block ml-25"
+              ? "absolute bg-gray-800 rounded-2xl p-2 z-1000 inline-block ml-16"
               : panelVisibility === i && teamPlayer?.team === 1
-              ? "absolute bg-gray-800 rounded-2xl p-2 z-1000 inline-block mr-25"
+              ? "absolute bg-gray-800 rounded-2xl p-2 z-1000 inline-block mr-16"
               : "hidden"
           }
         >
