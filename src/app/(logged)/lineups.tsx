@@ -4,7 +4,13 @@ import { Player, TeamPlayer, Match, Team, TeamExpanded } from "@/db";
 import { Nullable } from "@/lib/utils";
 import { useEffect, useState, useRef, Dispatch, SetStateAction } from "react";
 import { createSwapy, Swapy } from "swapy";
-import { deleteTeamPlayer, assignPlayer } from "./players/actions";
+import { motion, useMotionValue } from "framer-motion";
+import {
+  deleteTeamPlayer,
+  assignPlayer,
+  setPlayerStatus,
+  setPlayerPosition,
+} from "./players/actions";
 import { changeMatchPA } from "./matches/actions";
 
 function PlayerItem({
@@ -12,33 +18,23 @@ function PlayerItem({
   panelVisibility,
   i,
   teamPlayer,
-  teamList,
-  setTeamList,
+  setTeamPlayers,
 }: {
   player: Player;
   panelVisibility: number;
   teamPlayer: Nullable<TeamPlayer> | undefined;
   i: number;
-  teamList: Nullable<{
-    player: number;
-    match: number;
-    team: number;
-    index: number;
-    x: number | null;
-    y: number | null;
-    onPitch: boolean;
-  }>[];
-  setTeamList: Dispatch<
+  setTeamPlayers: Dispatch<
     SetStateAction<
-      Nullable<{
-        player: number;
+      {
         match: number;
-        index: number;
         team: number;
+        player: number;
+        index: number;
         x: number | null;
         y: number | null;
         onPitch: boolean;
-      }>[]
+      }[]
     >
   >;
 }) {
@@ -47,35 +43,58 @@ function PlayerItem({
       data-swapy-item={player.id}
       className="group flex justify-start items-center gap-2 p-2 cursor-grab data-swapy-dragging:cursor-grabbing group-data-[align=left]:flex-row group-data-[align=right]:flex-row-reverse"
     >
+      <span
+        className={
+          teamPlayer?.team === 0
+            ? "absolute select-none group-data-swapy-dragging:font-bold text-2xs right-10"
+            : "absolute select-none group-data-swapy-dragging:font-bold text-2xs left-10"
+        }
+      >
+        {player.nickname?.toUpperCase()}
+      </span>
+      <div
+        className={
+          teamPlayer?.team === 0
+            ? "rounded-4xl h-5 bg-red-700 aspect-square group-data-swapy-dragging:border-yellow-300 group-data-swapy-dragging:border-2"
+            : "rounded-4xl h-5 bg-blue-700 aspect-square group-data-swapy-dragging:border-yellow-300 group-data-swapy-dragging:border-2"
+        }
+      ></div>
       {player ? (
         <div
           className={
             panelVisibility === i && teamPlayer?.team === 0
-              ? "absolute bg-gray-800 rounded-2xl p-2 z-1000 inline-block ml-16"
+              ? "absolute flex flex-col bg-gray-800 rounded-2xl z-10 p-2 ml-6"
               : panelVisibility === i && teamPlayer?.team === 1
-              ? "absolute bg-gray-800 rounded-2xl p-2 z-1000 inline-block mr-16"
+              ? "absolute flex flex-col bg-gray-800 rounded-2xl z-10 p-2 mr-6"
               : "hidden"
           }
         >
           <button
             onClick={() => {
               deleteTeamPlayer(player.id);
-              setTeamList(
-                teamList.filter((team) => {
-                  return team.player === player.id;
-                })
+              setTeamPlayers((prevPlayers) =>
+                prevPlayers.filter((p) => p.player !== player.id)
               );
             }}
             className="rounded-md bg-gray-900 text-white border border-red-900 p-2 cursor-pointer hover:opacity-75 hover:bg-red-900"
           >
             Remover
           </button>
+          <button
+            onClick={() => {
+              setPlayerStatus(player.id, true);
+              setTeamPlayers((prevPlayers) =>
+                prevPlayers.map((p) =>
+                  p.player === player.id ? { ...p, onPitch: true } : p
+                )
+              );
+            }}
+            className="rounded-md bg-gray-900 text-white border border-red-900 p-2 cursor-pointer hover:opacity-75 hover:bg-red-900"
+          >
+            Agregar
+          </button>
         </div>
       ) : null}
-      <span className="select-none group-data-swapy-dragging:font-bold text-2xs">
-        {player.nickname?.toUpperCase()}
-      </span>
-      <div className="rounded-4xl h-5 bg-red-700 aspect-square group-data-swapy-dragging:border-yellow-300 group-data-swapy-dragging:border-2"></div>
     </div>
   );
 }
@@ -114,6 +133,7 @@ function Column({
   align,
   team,
   simpleMode,
+  setTeamPlayers,
 }: {
   amount: number;
   teamPlayers: Nullable<TeamPlayer>[];
@@ -121,12 +141,20 @@ function Column({
   align: "left" | "right";
   team: Team;
   simpleMode: boolean;
+  setTeamPlayers: Dispatch<
+    SetStateAction<
+      {
+        match: number;
+        team: number;
+        player: number;
+        index: number;
+        x: number | null;
+        y: number | null;
+        onPitch: boolean;
+      }[]
+    >
+  >;
 }) {
-  const [teamList, setTeamList] = useState(
-    teamPlayers.filter((tp) => {
-      return tp.onPitch === false;
-    })
-  );
   const [panelVisibility, setPanelVisibility] = useState(-1);
   return (
     <div className={simpleMode ? "flex flex-col mt-3" : "flex flex-col mt-19"}>
@@ -136,9 +164,13 @@ function Column({
         </h1>
       ) : null}
       {Array.from({ length: amount }, (_, i) => {
-        const teamPlayer = teamList.find((tp) => {
-          return tp.index === i;
-        });
+        const teamPlayer = teamPlayers
+          .filter((tp) => {
+            return tp.onPitch === false;
+          })
+          .find((tp) => {
+            return tp.index === i;
+          });
         const player = players.find((player) => {
           return player.id === teamPlayer?.player;
         });
@@ -163,8 +195,7 @@ function Column({
                   player={player}
                   panelVisibility={panelVisibility}
                   i={i}
-                  teamList={teamList}
-                  setTeamList={setTeamList}
+                  setTeamPlayers={setTeamPlayers}
                 />
               )}
             </PlayerSlot>
@@ -175,13 +206,251 @@ function Column({
   );
 }
 
-function Field({ simpleMode, team }: { simpleMode: boolean; team: Team }) {
+function PitchPlayer({
+  tp,
+  playerTeam,
+  players,
+  containerRef,
+  setPanelVisibility,
+  panelVisibility,
+  setPlayerList,
+  rect,
+  simpleMode,
+}: {
+  tp: TeamPlayer;
+  playerTeam: number;
+  players: Player[];
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  setPanelVisibility: Dispatch<SetStateAction<number>>;
+  panelVisibility: number;
+  setPlayerList: Dispatch<SetStateAction<TeamPlayer[]>>;
+  rect: DOMRect | undefined;
+  simpleMode: boolean;
+}) {
+  const x = useMotionValue(
+    simpleMode && tp.team === 0
+      ? (rect?.width || 0) - (tp.x || 0) - 20
+      : tp.x || 0
+  );
+  const y = useMotionValue(
+    !simpleMode
+      ? tp.y || 0
+      : simpleMode && tp.team === 0
+      ? ((rect?.height || 0) - (tp.y || 0)) / 2 - 20
+      : (tp.y || 0) + ((rect?.height || 0) - (tp.y || 0)) / 2 - 20
+  );
+
+  const dragConstraints = rect
+    ? !simpleMode
+      ? containerRef
+      : playerTeam === 0
+      ? {
+          top: 0,
+          left: 0,
+          right: rect.width - 20,
+          bottom: rect.height / 2 - 20,
+        }
+      : {
+          top: rect.height / 2,
+          left: 0,
+          right: rect.width - 20,
+          bottom: rect.height - 20,
+        }
+    : {};
+
+  return (
+    <motion.div
+      key={tp.player}
+      drag
+      dragConstraints={dragConstraints}
+      dragMomentum={false}
+      onHoverStart={() => {
+        setPanelVisibility(tp.player);
+      }}
+      onMouseLeave={() => {
+        setPanelVisibility(-1);
+      }}
+      onDrag={() => {
+        setPanelVisibility(-1);
+      }}
+      onDragEnd={() => {
+        const timer = setTimeout(() => {
+          let posX = 0;
+          let posY = 0;
+          if (!simpleMode) {
+            posX = x.get();
+            posY = y.get();
+          }
+          if (simpleMode && tp.team === 0) {
+            posX = (rect?.width || 0) - x.get() - 20;
+            posY = (rect?.height || 0) - (y.get() + 20) * 2;
+          }
+          if (simpleMode && tp.team === 1) {
+            posX = x.get();
+            posY = y.get() / 2;
+          }
+          setPlayerPosition(tp.player, posX, posY);
+          setPlayerList((prevTeam) =>
+            prevTeam.map((p) =>
+              p.player === tp.player ? { ...p, x: posX, y: posY } : p
+            )
+          );
+        }, 1000);
+        return () => clearTimeout(timer);
+      }}
+      className="flex absolute flex-col items-center justify-center cursor-grab group"
+      style={{
+        x,
+        y,
+      }}
+    >
+      <div
+        className={
+          playerTeam === 0
+            ? "rounded-4xl h-5 w-5 bg-red-700 active:border-2 active:border-yellow-300 active:cursor-grabbing"
+            : "rounded-4xl h-5 w-5 bg-blue-700 active:border-2 active:border-yellow-300 active:cursor-grabbing"
+        }
+      ></div>
+      <label className="absolute mt-10">
+        {players
+          .find((player) => {
+            return player.id === tp?.player;
+          })
+          ?.nickname?.toUpperCase()}
+      </label>
+      {tp ? (
+        <div
+          className={
+            panelVisibility === tp.player
+              ? "absolute bg-gray-800 rounded-2xl p-2 z-1000 ml-29"
+              : "hidden"
+          }
+        >
+          <button
+            onClick={() => {
+              if (tp.player) {
+                setPlayerStatus(tp.player, false);
+                setPlayerList((prevTeam) =>
+                  prevTeam.map((p) =>
+                    p.player === tp.player ? { ...p, onPitch: false } : p
+                  )
+                );
+              }
+            }}
+            className="rounded-md bg-gray-900 text-white border border-red-900 p-2 cursor-pointer hover:opacity-75 hover:bg-red-900"
+          >
+            Remover
+          </button>
+        </div>
+      ) : null}
+    </motion.div>
+  );
+}
+
+function Pitch({
+  teams,
+  team,
+  teamPlayers,
+  leftTeam,
+  rightTeam,
+  players,
+  setLeftTeam,
+  setRightTeam,
+  simpleMode,
+}: {
+  teams: TeamExpanded[];
+  team: number;
+  teamPlayers: TeamPlayer[][];
+  leftTeam: TeamPlayer[];
+  rightTeam: TeamPlayer[];
+  players: Player[];
+  setLeftTeam: Dispatch<SetStateAction<TeamPlayer[]>>;
+  setRightTeam: Dispatch<SetStateAction<TeamPlayer[]>>;
+  simpleMode: boolean;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [panelVisibility, setPanelVisibility] = useState(-1);
+
+  let currentTeamPlayers: TeamPlayer[] = [];
+  let currentSetTeamPlayers: Dispatch<SetStateAction<TeamPlayer[]>> =
+    setLeftTeam;
+
+  if (team === 0) {
+    currentTeamPlayers = leftTeam;
+    currentSetTeamPlayers = setLeftTeam;
+  } else if (team === 1) {
+    currentTeamPlayers = rightTeam;
+    currentSetTeamPlayers = setRightTeam;
+  }
+
+  const rect = containerRef.current
+    ? containerRef.current.getBoundingClientRect()
+    : undefined;
+
   return (
     <div>
-      {!simpleMode ? (
-        <h1 className="text-xl mb-2">{team?.name?.toUpperCase()}</h1>
-      ) : null}
-      <div className="flex relative rounded-[19px] border-2 inset-shadow-blue-950/100 border-white shadow-amber-300-2xl h-[500px] w-[387.55px] bg-contain bg-[url('/pitch.png')]"></div>
+      {team !== 2 && (
+        <h1 className="text-xl mb-2">{teams[team]?.name?.toUpperCase()}</h1>
+      )}
+
+      <motion.div
+        ref={containerRef}
+        className="flex relative rounded-[19px] border-2 inset-shadow-blue-950/100 border-white bg-gray-500 shadow-[0_0_30px_#6a7282] h-[500px] w-[387.55px] bg-contain bg-[url('/pitch.png')]"
+      >
+        {simpleMode ? (
+          <>
+            {leftTeam
+              ?.filter((tp) => tp.onPitch)
+              .map((tp) => (
+                <PitchPlayer
+                  key={tp.player}
+                  tp={tp}
+                  playerTeam={0}
+                  players={players}
+                  containerRef={containerRef}
+                  setPanelVisibility={setPanelVisibility}
+                  panelVisibility={panelVisibility}
+                  setPlayerList={setLeftTeam}
+                  rect={rect}
+                  simpleMode={simpleMode}
+                />
+              ))}
+            {rightTeam
+              ?.filter((tp) => tp.onPitch)
+              .map((tp) => (
+                <PitchPlayer
+                  key={tp.player}
+                  tp={tp}
+                  playerTeam={1}
+                  players={players}
+                  containerRef={containerRef}
+                  setPanelVisibility={setPanelVisibility}
+                  panelVisibility={panelVisibility}
+                  setPlayerList={setRightTeam}
+                  rect={rect}
+                  simpleMode={simpleMode}
+                />
+              ))}
+          </>
+        ) : (
+          currentTeamPlayers
+            ?.filter((tp) => tp.onPitch)
+            .map((tp) => (
+              <PitchPlayer
+                key={tp.player}
+                tp={tp}
+                playerTeam={team}
+                players={players}
+                containerRef={containerRef}
+                setPanelVisibility={setPanelVisibility}
+                panelVisibility={panelVisibility}
+                setPlayerList={currentSetTeamPlayers}
+                rect={rect}
+                simpleMode={simpleMode}
+              />
+            ))
+        )}
+      </motion.div>
     </div>
   );
 }
@@ -219,9 +488,7 @@ export function Lineups({
 
   useEffect(() => {
     if (container.current) {
-      swapy.current = createSwapy(container.current, {
-        // manualSwap: true
-      });
+      swapy.current = createSwapy(container.current, {});
       swapy.current.onSwap((event) => {
         const playerId = Number(event.draggingItem);
         const affected = Number(event.swappedWithItem);
@@ -241,10 +508,7 @@ export function Lineups({
             });
             if (player) {
               player.team = 0;
-              console.log(event);
-              console.log(leftTeam);
               setLeftTeam([...leftTeam, player]);
-              console.log(leftTeam);
             }
           } else {
             affectedTeam = 0;
@@ -259,10 +523,7 @@ export function Lineups({
             });
             if (player) {
               player.team = 1;
-              console.log(event);
-              console.log(rightTeam);
               setRightTeam([...rightTeam, player]);
-              console.log(rightTeam);
             }
           } else {
             affectedTeam = 1;
@@ -283,7 +544,7 @@ export function Lineups({
   return (
     <div className="flex flex-col justify-center items-center">
       <div className="flex flex-row gap-4">
-        <div className="flex items-center rounded-md bg-gray-900 text-white gap-0.5">
+        <div className="flex items-center rounded-md bg-[#202020] text-white gap-0.5">
           {options.map((value) => (
             <label key={value}>
               <input
@@ -309,7 +570,7 @@ export function Lineups({
           ))}
         </div>
         <button
-          className="flex flex-row rounded-md bg-gray-900 text-white border border-gray-900 gap-0.5 p-2 cursor-pointer hover:opacity-75"
+          className="flex flex-row rounded-md bg-[#202020] text-white border border-gray-900 gap-0.5 p-2 cursor-pointer hover:opacity-75"
           onClick={() => setSimpleMode(!simpleMode)}
         >
           <img
@@ -332,11 +593,32 @@ export function Lineups({
           amount={playerAmount}
           team={teams[0]}
           simpleMode={simpleMode}
+          setTeamPlayers={setLeftTeam}
         />
         <div className="mt-4 flex flex-row justify-center gap-20">
-          <Field simpleMode={simpleMode} team={teams[0]} />
-          {simpleMode === false ? (
-            <Field simpleMode={simpleMode} team={teams[1]} />
+          <Pitch
+            teams={teams}
+            team={simpleMode ? 2 : 0}
+            teamPlayers={teamPlayers}
+            leftTeam={leftTeam}
+            rightTeam={rightTeam}
+            players={players}
+            setLeftTeam={setLeftTeam}
+            setRightTeam={setRightTeam}
+            simpleMode={simpleMode}
+          />
+          {!simpleMode ? (
+            <Pitch
+              teams={teams}
+              team={1}
+              teamPlayers={teamPlayers}
+              leftTeam={leftTeam}
+              rightTeam={rightTeam}
+              players={players}
+              setLeftTeam={setLeftTeam}
+              setRightTeam={setRightTeam}
+              simpleMode={simpleMode}
+            />
           ) : null}
         </div>
         <Column
@@ -346,6 +628,7 @@ export function Lineups({
           amount={playerAmount}
           team={teams[1]}
           simpleMode={simpleMode}
+          setTeamPlayers={setRightTeam}
         />
       </div>
     </div>

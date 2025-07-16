@@ -93,3 +93,17 @@ export async function assignPlayer(
     });
   }
 }
+
+export async function setPlayerStatus(id: number, status: boolean) {
+  await db
+    .update(teamPlayers)
+    .set({ onPitch: status })
+    .where(eq(teamPlayers.player, id));
+}
+
+export async function setPlayerPosition(id: number, x: number, y: number) {
+  await db
+    .update(teamPlayers)
+    .set({ x: x, y: y })
+    .where(eq(teamPlayers.player, id));
+}

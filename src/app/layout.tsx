@@ -29,7 +29,7 @@ export default async function RootLayout({
         <title>futbol</title>
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-black text-white`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#101010] text-white`}
       >
         {children}
       </body>
