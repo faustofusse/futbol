@@ -24,9 +24,13 @@ export function LoginForm() {
         <button
           disabled={pending}
           type="submit"
-          className="p-1 bg-blue-400 text-white  cursor-pointer hover:opacity-75"
+          className={
+            pending
+              ? "p-1 bg-blue-400 text-white  cursor-pointer hover:opacity-75 pointer-events-none"
+              : "p-1 bg-blue-400 text-white  cursor-pointer hover:opacity-75"
+          }
         >
-          {pending ? "banca un toque..." : "login"}
+          {pending ? "Espere..." : "Iniciar sesión"}
         </button>
       </form>
     </div>

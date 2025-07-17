@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { NavBar } from "@/components/navbar";
-import { db, groups as groupsTable, groupUsers } from "@/db";
+import { db, groups, groups as groupsTable, groupUsers, matches } from "@/db";
 import { getSession } from "@/lib/sessions";
-import { eq, getTableColumns } from "drizzle-orm";
+import { and, isNull, eq, getTableColumns } from "drizzle-orm";
 import { redirect } from "next/navigation";
-
-import "../globals.css";
+import { getCurrentMatch } from "./groups/[groupId]/matches/actions";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,15 +30,27 @@ export default async function RootLayout({
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const groups = await db
+  const groupsArray = await db
     .select({ ...getTableColumns(groupsTable) })
-    .from(groupUsers)
-    .where(eq(groupUsers.user, session.userId))
-    .leftJoin(groupsTable, eq(groupUsers.group, groupsTable.id));
+    .from(groups)
+    .where(and(eq(groups.id, groupUsers.group), isNull(groups.deleted)))
+    .leftJoin(groupUsers, eq(groupUsers.user, session.userId));
 
+  const matchesArray = await db
+    .select()
+    .from(matches)
+    .where(eq(matches.group, session.groupId));
+
+  const currentMatch = await getCurrentMatch(session.groupId ?? 0);
   return (
     <>
-      <NavBar groups={groups} currentGroup={session.groupId} />
+      <NavBar
+        groups={groupsArray}
+        matches={matchesArray}
+        currentMatch={currentMatch.match.id}
+        currentGroup={session.groupId}
+        userId={session.userId}
+      />
       <main className="flex flex-col items-center mt-3">{children}</main>
     </>
   );

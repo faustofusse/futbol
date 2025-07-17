@@ -9,7 +9,7 @@ const encodedKey = new TextEncoder().encode(secretKey);
 export type SessionPayload = {
   userId: number;
   groupId: number;
-  matchId: number;
+  matchId?: number;
 };
 
 export async function encrypt(payload: SessionPayload) {
@@ -41,10 +41,11 @@ export async function getSession() {
   return payload as SessionPayload;
 }
 
+// Esta funcion indica que crea una sesion pero la uso para cuando se cambia de grupo o partido ya que solo hace set(calculo que solo edita, no crea nada nuevo)
 export async function createSession(
   userId: number,
   groupId: number,
-  matchId: number
+  matchId?: number
 ) {
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   const session = await encrypt({ userId, groupId, matchId });

@@ -11,7 +11,7 @@ import {
   setPlayerStatus,
   setPlayerPosition,
 } from "./players/actions";
-import { changeMatchPA } from "./matches/actions";
+import { changeMatchPA } from "../actions";
 
 function PlayerItem({
   player,
@@ -71,7 +71,9 @@ function PlayerItem({
         >
           <button
             onClick={() => {
-              deleteTeamPlayer(player.id);
+              if (teamPlayer?.match) {
+                deleteTeamPlayer(player.id, teamPlayer.match);
+              }
               setTeamPlayers((prevPlayers) =>
                 prevPlayers.filter((p) => p.player !== player.id)
               );
@@ -82,7 +84,9 @@ function PlayerItem({
           </button>
           <button
             onClick={() => {
-              setPlayerStatus(player.id, true);
+              if (teamPlayer?.match) {
+                setPlayerStatus(player.id, true, teamPlayer.match);
+              }
               setTeamPlayers((prevPlayers) =>
                 prevPlayers.map((p) =>
                   p.player === player.id ? { ...p, onPitch: true } : p
@@ -289,7 +293,7 @@ function PitchPlayer({
             posX = x.get();
             posY = y.get() / 2;
           }
-          setPlayerPosition(tp.player, posX, posY);
+          setPlayerPosition(tp.player, posX, posY, tp.match);
           setPlayerList((prevTeam) =>
             prevTeam.map((p) =>
               p.player === tp.player ? { ...p, x: posX, y: posY } : p
@@ -329,7 +333,7 @@ function PitchPlayer({
           <button
             onClick={() => {
               if (tp.player) {
-                setPlayerStatus(tp.player, false);
+                setPlayerStatus(tp.player, false, tp.match);
                 setPlayerList((prevTeam) =>
                   prevTeam.map((p) =>
                     p.player === tp.player ? { ...p, onPitch: false } : p
@@ -529,9 +533,9 @@ export function Lineups({
             affectedTeam = 1;
           }
         }
-        assignPlayer(group, playerId, playerIndex, playerTeam);
+        assignPlayer(group, playerId, playerIndex, playerTeam, match.id);
         if (affected) {
-          assignPlayer(group, affected, affectedIndex, affectedTeam);
+          assignPlayer(group, affected, affectedIndex, affectedTeam, match.id);
         }
       });
     }

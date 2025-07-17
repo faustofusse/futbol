@@ -1,6 +1,6 @@
 "use server";
 
-import { db, players, matches, teams, teamPlayers } from "@/db";
+import { db, players, matches, teamPlayers } from "@/db";
 import { and, eq, isNull } from "drizzle-orm";
 
 export async function createPlayer(nickname: string, groupId: number) {
@@ -19,8 +19,10 @@ export async function deletePlayer(id: number) {
   await db.delete(teamPlayers).where(eq(teamPlayers.player, id));
 }
 
-export async function deleteTeamPlayer(id: number) {
-  await db.delete(teamPlayers).where(eq(teamPlayers.player, id));
+export async function deleteTeamPlayer(id: number, matchId: number) {
+  await db
+    .delete(teamPlayers)
+    .where(and(eq(teamPlayers.player, id), eq(teamPlayers.match, matchId)));
 }
 
 export async function getPlayers(groupId: number) {
@@ -34,6 +36,7 @@ export async function getTeamPlayers(matchId: number) {
   const team_players = await db
     .select()
     .from(teamPlayers)
+    .where(eq(teamPlayers.match, matchId))
     .orderBy(teamPlayers.team);
 
   const teamGroups = new Map<number, typeof team_players>();
@@ -54,17 +57,24 @@ export async function assignPlayer(
   groupId: number,
   playerId: number,
   index: number,
-  teamId: number
+  teamId: number,
+  matchId: number
 ) {
   const match = (
-    await db.select().from(matches).where(eq(matches.group, groupId)).limit(1)
+    await db
+      .select()
+      .from(matches)
+      .where(and(eq(matches.group, groupId), eq(matches.id, matchId)))
+      .limit(1)
   )[0];
 
   const player = (
     await db
       .select()
       .from(teamPlayers)
-      .where(eq(teamPlayers.player, playerId))
+      .where(
+        and(eq(teamPlayers.player, playerId), eq(teamPlayers.match, matchId))
+      )
       .limit(1)
   )[0];
   if (index === -1) {
@@ -73,7 +83,6 @@ export async function assignPlayer(
     for (let i = 0; i < match.playerAmount; i++) {
       if (!takenPositions.has(i)) {
         index = i;
-        console.log(i);
         break;
       }
     }
@@ -82,7 +91,9 @@ export async function assignPlayer(
     await db
       .update(teamPlayers)
       .set({ team: teamId, index: index })
-      .where(eq(teamPlayers.player, playerId));
+      .where(
+        and(eq(teamPlayers.player, playerId), eq(teamPlayers.match, matchId))
+      );
   } else {
     await db.insert(teamPlayers).values({
       team: teamId,
@@ -94,16 +105,25 @@ export async function assignPlayer(
   }
 }
 
-export async function setPlayerStatus(id: number, status: boolean) {
+export async function setPlayerStatus(
+  id: number,
+  status: boolean,
+  matchId: number
+) {
   await db
     .update(teamPlayers)
     .set({ onPitch: status })
-    .where(eq(teamPlayers.player, id));
+    .where(and(eq(teamPlayers.player, id), eq(teamPlayers.match, matchId)));
 }
 
-export async function setPlayerPosition(id: number, x: number, y: number) {
+export async function setPlayerPosition(
+  id: number,
+  x: number,
+  y: number,
+  matchId: number
+) {
   await db
     .update(teamPlayers)
     .set({ x: x, y: y })
-    .where(eq(teamPlayers.player, id));
+    .where(and(eq(teamPlayers.player, id), eq(teamPlayers.match, matchId)));
 }

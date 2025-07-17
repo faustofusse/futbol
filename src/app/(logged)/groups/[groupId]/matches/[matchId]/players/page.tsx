@@ -1,6 +1,6 @@
 import { getSession } from "@/lib/sessions";
 import { getPlayers, getTeamPlayers } from "./actions";
-import { getCurrentMatch } from "../matches/actions";
+import { getCurrentMatch } from "../../actions";
 import { PlayersList } from "./list";
 
 export default async function Players() {
@@ -16,6 +16,7 @@ export default async function Players() {
         groupId={session!.groupId}
         teams={teams}
         teamPlayers={teamPlayers}
+        matchId={match?.id}
       />
     </>
   );

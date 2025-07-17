@@ -8,20 +8,12 @@ import {
   players as playersTable,
   teamPlayers,
 } from "@/db";
-import {
-  and,
-  eq,
-  isNull,
-  desc,
-  isNotNull,
-  getTableColumns,
-  sql,
-} from "drizzle-orm";
+import { and, eq, isNull, desc, isNotNull, getTableColumns } from "drizzle-orm";
 
 const defaultPlayerAmount = 8;
 
 export async function getMatches(groupId: number) {
-  return db
+  const matchesArray = await db
     .select()
     .from(matches)
     .where(
@@ -31,23 +23,29 @@ export async function getMatches(groupId: number) {
         isNull(matches.deleted)
       )
     );
+
+  const teams: TeamExpanded[] = await db.select().from(teamsTable);
+
+  return { matchesArray, teams };
 }
 
-export async function createMatch(groupId: number) {
-  // busco si ya hay un partido para ver la cantidad de jugadores
-  const playerAmount = await db
-    .select({ playerAmount: matches.playerAmount })
-    .from(matches)
-    .where(eq(matches.group, groupId))
-    .orderBy(desc(matches.created))
-    .then((p) => p.at(0)?.playerAmount);
-
+export async function createMatch(
+  groupId: number,
+  first?: string,
+  second?: string
+) {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const dayStr = day + "/" + month + "/" + year;
   // creo el partido
   const match = await db
     .insert(matches)
     .values({
       group: groupId,
-      playerAmount: playerAmount ?? defaultPlayerAmount,
+      playerAmount: defaultPlayerAmount,
+      date: dayStr,
     })
     .returning()
     .then((p) => p.at(0));
@@ -58,27 +56,20 @@ export async function createMatch(groupId: number) {
 
   // creo los equipos
   const teams = [
-    { match: match?.id, id: 0, name: "CLARO" },
-    { match: match?.id, id: 1, name: "OSCURO" },
+    { match: match?.id, id: 0, name: first || "CLARO" },
+    { match: match?.id, id: 1, name: second || "OSCURO" },
   ];
-  console.log("teams", teams);
   await db.insert(teamsTable).values(teams);
 
   return { match, teams };
 }
 
 export async function getCurrentMatch(groupId: number) {
-  // busco un partido sin fecha
+  // busco un partido
   const match = await db
     .select()
     .from(matches)
-    .where(
-      and(
-        eq(matches.group, groupId),
-        isNull(matches.date),
-        isNull(matches.deleted)
-      )
-    )
+    .where(and(eq(matches.group, groupId), isNull(matches.deleted)))
     .orderBy(desc(matches.created))
     .then((p) => p.at(0));
 

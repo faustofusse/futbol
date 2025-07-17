@@ -24,7 +24,7 @@ export const matches = sqliteTable("matches", {
   group: int()
     .notNull()
     .references(() => groups.id),
-  date: int(),
+  date: text(),
   playerAmount: int("player_amount").notNull(),
   ...timestamps,
 });

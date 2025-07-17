@@ -1,6 +1,6 @@
 "use client";
 
-import { Player, TeamPlayer, Team, db } from "@/db";
+import { Player, TeamPlayer, Team } from "@/db";
 import { useState, useRef } from "react";
 import { createPlayer, deletePlayer, assignPlayer } from "./actions";
 
@@ -9,11 +9,13 @@ export function PlayersList({
   groupId,
   teams,
   teamPlayers,
+  matchId,
 }: {
   initialPlayers: Player[];
   groupId: number;
   teams: Team[];
   teamPlayers: TeamPlayer[][];
+  matchId: number;
 }) {
   const [players, setPlayers] = useState(initialPlayers);
   const selectRef = useRef<{ [playerId: number]: HTMLSelectElement | null }>(
@@ -43,7 +45,7 @@ export function PlayersList({
         className="flex flex-row justify-between items-center p-3 border-b-1 gap-3 border-[#2b2b2b]"
       >
         <span className="w-20">{p.nickname}</span>
-        <div className="flex flex-row justify-between bg-[#272727] p-1 rounded-2xl gap-1">
+        <div className="flex flex-row justify-between bg-[#272727] p-1 rounded-md gap-1">
           <select
             className="rounded-md bg-gray-900 text-white border border-gray-900 gap-0.5 p-2"
             id="select"
@@ -113,7 +115,7 @@ export function PlayersList({
   }
 
   async function assign(id: number, teamId: number) {
-    assignPlayer(groupId, id, -1, teamId);
+    assignPlayer(groupId, id, -1, teamId, matchId);
 
     const nick = players.find((player) => {
       return player.id === id;
