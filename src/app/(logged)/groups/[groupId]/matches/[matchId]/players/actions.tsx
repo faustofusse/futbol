@@ -108,11 +108,12 @@ export async function assignPlayer(
 export async function setPlayerStatus(
   id: number,
   status: boolean,
-  matchId: number
+  matchId: number,
+  index: number
 ) {
   await db
     .update(teamPlayers)
-    .set({ onPitch: status })
+    .set({ onPitch: status, index: index })
     .where(and(eq(teamPlayers.player, id), eq(teamPlayers.match, matchId)));
 }
 

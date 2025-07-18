@@ -18,12 +18,14 @@ function PlayerItem({
   panelVisibility,
   i,
   teamPlayer,
+  teamPlayers,
   setTeamPlayers,
 }: {
   player: Player;
   panelVisibility: number;
   teamPlayer: Nullable<TeamPlayer> | undefined;
   i: number;
+  teamPlayers: Nullable<TeamPlayer>[];
   setTeamPlayers: Dispatch<
     SetStateAction<
       {
@@ -45,27 +47,21 @@ function PlayerItem({
     >
       <span
         className={
-          teamPlayer?.team === 0
-            ? "absolute select-none group-data-swapy-dragging:font-bold text-2xs right-10"
-            : "absolute select-none group-data-swapy-dragging:font-bold text-2xs left-10"
+          "absolute select-none group-data-swapy-dragging:font-bold text-2xs group-data-[align=left]:right-9 group-data-[align=right]:left-9"
         }
       >
         {player.nickname?.toUpperCase()}
       </span>
       <div
         className={
-          teamPlayer?.team === 0
-            ? "rounded-4xl h-5 bg-red-700 aspect-square group-data-swapy-dragging:border-yellow-300 group-data-swapy-dragging:border-2"
-            : "rounded-4xl h-5 bg-blue-700 aspect-square group-data-swapy-dragging:border-yellow-300 group-data-swapy-dragging:border-2"
+          "rounded-4xl h-5 group-data-[align=left]:bg-red-700 group-data-[align=right]:bg-blue-700 aspect-square group-data-swapy-dragging:border-yellow-300 group-data-swapy-dragging:border-2"
         }
       ></div>
       {player ? (
         <div
           className={
-            panelVisibility === i && teamPlayer?.team === 0
-              ? "absolute flex flex-col bg-gray-800 rounded-2xl z-10 p-2 ml-6"
-              : panelVisibility === i && teamPlayer?.team === 1
-              ? "absolute flex flex-col bg-gray-800 rounded-2xl z-10 p-2 mr-6"
+            panelVisibility === i
+              ? "absolute flex flex-col bg-gray-800 rounded-2xl z-10 p-2 group-data-[align=left]:ml-6 group-data-[align=right]:mr-6"
               : "hidden"
           }
         >
@@ -85,7 +81,15 @@ function PlayerItem({
           <button
             onClick={() => {
               if (teamPlayer?.match) {
-                setPlayerStatus(player.id, true, teamPlayer.match);
+                const amntPlayersOffPitch = teamPlayers.filter(
+                  (p) => p.onPitch === false
+                ).length;
+                setPlayerStatus(
+                  player.id,
+                  true,
+                  teamPlayer.match,
+                  amntPlayersOffPitch
+                );
               }
               setTeamPlayers((prevPlayers) =>
                 prevPlayers.map((p) =>
@@ -195,10 +199,11 @@ function Column({
             <PlayerSlot key={i} index={i} align={align}>
               {player && (
                 <PlayerItem
-                  teamPlayer={teamPlayer}
                   player={player}
                   panelVisibility={panelVisibility}
                   i={i}
+                  teamPlayer={teamPlayer}
+                  teamPlayers={teamPlayers}
                   setTeamPlayers={setTeamPlayers}
                 />
               )}
@@ -217,6 +222,7 @@ function PitchPlayer({
   containerRef,
   setPanelVisibility,
   panelVisibility,
+  playerList,
   setPlayerList,
   rect,
   simpleMode,
@@ -227,6 +233,7 @@ function PitchPlayer({
   containerRef: React.RefObject<HTMLDivElement | null>;
   setPanelVisibility: Dispatch<SetStateAction<number>>;
   panelVisibility: number;
+  playerList: TeamPlayer[];
   setPlayerList: Dispatch<SetStateAction<TeamPlayer[]>>;
   rect: DOMRect | undefined;
   simpleMode: boolean;
@@ -333,10 +340,20 @@ function PitchPlayer({
           <button
             onClick={() => {
               if (tp.player) {
-                setPlayerStatus(tp.player, false, tp.match);
+                const amntPlayersOffPitch = playerList.filter(
+                  (p) => p.onPitch === false
+                ).length;
+                setPlayerStatus(
+                  tp.player,
+                  false,
+                  tp.match,
+                  amntPlayersOffPitch
+                );
                 setPlayerList((prevTeam) =>
                   prevTeam.map((p) =>
-                    p.player === tp.player ? { ...p, onPitch: false } : p
+                    p.player === tp.player
+                      ? { ...p, onPitch: false, index: amntPlayersOffPitch }
+                      : p
                   )
                 );
               }
@@ -414,6 +431,7 @@ function Pitch({
                   containerRef={containerRef}
                   setPanelVisibility={setPanelVisibility}
                   panelVisibility={panelVisibility}
+                  playerList={leftTeam}
                   setPlayerList={setLeftTeam}
                   rect={rect}
                   simpleMode={simpleMode}
@@ -430,6 +448,7 @@ function Pitch({
                   containerRef={containerRef}
                   setPanelVisibility={setPanelVisibility}
                   panelVisibility={panelVisibility}
+                  playerList={rightTeam}
                   setPlayerList={setRightTeam}
                   rect={rect}
                   simpleMode={simpleMode}
@@ -448,6 +467,7 @@ function Pitch({
                 containerRef={containerRef}
                 setPanelVisibility={setPanelVisibility}
                 panelVisibility={panelVisibility}
+                playerList={currentTeamPlayers}
                 setPlayerList={currentSetTeamPlayers}
                 rect={rect}
                 simpleMode={simpleMode}
@@ -489,10 +509,14 @@ export function Lineups({
 
   const swapy = useRef<Swapy>(null);
   const container = useRef<HTMLDivElement>(null);
+  let newSwapyTeams = teamPlayers;
 
   useEffect(() => {
     if (container.current) {
-      swapy.current = createSwapy(container.current, {});
+      swapy.current = createSwapy(container.current, {
+        manualSwap: true,
+        swapMode: "drop",
+      });
       swapy.current.onSwap((event) => {
         const playerId = Number(event.draggingItem);
         const affected = Number(event.swappedWithItem);
@@ -503,36 +527,66 @@ export function Lineups({
 
         let playerTeam;
         let affectedTeam;
+        let player;
         if (toSlot.includes("left")) {
           playerTeam = 0;
           if (fromSlot.includes("right")) {
             affectedTeam = 1;
-            const player = rightTeam.find((p) => {
+            player = rightTeam.find((p) => {
               return p.player === playerId;
             });
-            if (player) {
-              player.team = 0;
-              setLeftTeam([...leftTeam, player]);
-            }
+            player!.index = playerIndex;
+            newSwapyTeams = [
+              [...leftTeam, player!],
+              rightTeam.filter((p) => p.player != playerId),
+            ];
           } else {
             affectedTeam = 0;
+            newSwapyTeams = [
+              leftTeam.map((p) => {
+                if (p.player === playerId) {
+                  return { ...p, index: playerIndex };
+                } else {
+                  return p;
+                }
+              }),
+              rightTeam,
+            ];
           }
         } else {
           playerTeam = 1;
-          setRightTeam(rightTeam);
           if (fromSlot.includes("left")) {
             affectedTeam = 0;
-            const player = leftTeam.find((p) => {
+            player = leftTeam.find((p) => {
               return p.player === playerId;
             });
-            if (player) {
-              player.team = 1;
-              setRightTeam([...rightTeam, player]);
-            }
+            player!.index = playerIndex;
+            newSwapyTeams = [
+              leftTeam.filter((p) => p.player != playerId),
+              [...rightTeam, player!],
+            ];
           } else {
             affectedTeam = 1;
+            newSwapyTeams = [
+              leftTeam,
+              rightTeam.map((p) => {
+                if (p.player === playerId) {
+                  return { ...p, index: playerIndex };
+                } else {
+                  return p;
+                }
+              }),
+            ];
           }
         }
+        // Me dio paja hacer esto, actualiza mal y suele tirar errores.
+        // ManualSwap hace maquinaria rara con esto pero no llegue a leer del todo la documentacion. Una verga swapy.
+        swapy.current?.onSwapEnd(() => {
+          setLeftTeam(newSwapyTeams[0]);
+          setRightTeam(newSwapyTeams[1]);
+          swapy.current?.update();
+        });
+
         assignPlayer(group, playerId, playerIndex, playerTeam, match.id);
         if (affected) {
           assignPlayer(group, affected, affectedIndex, affectedTeam, match.id);
@@ -544,6 +598,12 @@ export function Lineups({
       swapy.current?.destroy();
     };
   }, []);
+
+  useEffect(() => {
+    if (swapy.current) {
+      swapy.current.update();
+    }
+  }, [leftTeam, rightTeam]);
 
   return (
     <div className="flex flex-col justify-center items-center">
