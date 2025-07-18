@@ -48,7 +48,7 @@ export function NavBar({
             onChange={(e) => {
               redirectToGroup(Number(e.target.value));
             }}
-            className="rounded-md bg-[#202020] text-white border border-gray-900 gap-0.5 p-2 cursor-pointer hover:opacity-75"
+            className="rounded-md bg-[#202020] text-white border border-gray-900 gap-0.5 p-2 cursor-pointer hover:opacity-75 focus:outline-none"
           >
             {groups.map((group) => (
               <option value={group!.id!} key={group?.id}>

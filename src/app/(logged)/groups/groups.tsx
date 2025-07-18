@@ -84,7 +84,7 @@ export function GroupsList({
           className="flex flex-col min-w-70 border-1 border-[#2b2b2b] rounded-2xl mb-3"
         >
           <input
-            className="flex flex-col min-w-70 p-2"
+            className="flex flex-col min-w-70 p-2 focus:outline-none"
             ref={groupInput}
             placeholder="Nombre del grupo"
           ></input>
