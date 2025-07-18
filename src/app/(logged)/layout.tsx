@@ -41,13 +41,16 @@ export default async function RootLayout({
     .from(matches)
     .where(eq(matches.group, session.groupId));
 
-  const currentMatch = await getCurrentMatch(session.groupId ?? 0);
+  const currentMatch = await getCurrentMatch(
+    session.groupId ?? 0,
+    session.matchId ?? 0
+  );
   return (
     <>
       <NavBar
         groups={groupsArray}
         matches={matchesArray}
-        currentMatch={currentMatch.match.id}
+        currentMatch={currentMatch?.match.id}
         currentGroup={session.groupId}
         userId={session.userId}
       />

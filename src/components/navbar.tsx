@@ -1,6 +1,5 @@
 "use client";
 
-import { createSession } from "@/lib/sessions";
 import { Match } from "@/db";
 import { logout } from "@/lib/auth";
 import Link from "next/link";
@@ -23,12 +22,6 @@ export function NavBar({
   currentGroup?: number;
   userId: number;
 }) {
-  const [selectedId, setSelectedId] = useState(0);
-  const group =
-    currentGroup == null
-      ? groups.at(0)
-      : groups.filter((g) => g.id == currentGroup).at(0);
-
   async function redirectToGroup(id: number) {
     if (id != -1) {
       const matchId = matches.filter((group) => group.group === id)[0]?.id;
@@ -60,18 +53,24 @@ export function NavBar({
         </div>
         <div className="flex flex-row gap-4">
           <Link
-            href={"/groups/" + currentGroup + "/matches/" + currentMatch}
+            href={
+              currentMatch
+                ? "/groups/" + currentGroup + "/matches/" + currentMatch
+                : "/groups/" + currentGroup + "/matches/"
+            }
             className="rounded-md bg-[#202020] text-white border border-gray-900 gap-0.5 p-2 cursor-pointer hover:opacity-75"
           >
             Esquema
           </Link>
           <Link
             href={
-              "/groups/" +
-              currentGroup +
-              "/matches/" +
-              currentMatch +
-              "/players"
+              currentMatch
+                ? "/groups/" +
+                  currentGroup +
+                  "/matches/" +
+                  currentMatch +
+                  "/players"
+                : "/groups/" + currentGroup + "/matches/"
             }
             className="rounded-md bg-[#202020] text-white border border-gray-900 gap-0.5 p-2 cursor-pointer hover:opacity-75"
           >

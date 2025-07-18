@@ -64,18 +64,26 @@ export async function createMatch(
   return { match, teams };
 }
 
-export async function getCurrentMatch(groupId: number) {
+export async function getCurrentMatch(groupId: number, matchId: number) {
   // busco un partido
-  const match = await db
-    .select()
-    .from(matches)
-    .where(and(eq(matches.group, groupId), isNull(matches.deleted)))
-    .orderBy(desc(matches.created))
-    .then((p) => p.at(0));
+  let match;
+  if (matchId) {
+    match = await db
+      .select()
+      .from(matches)
+      .where(
+        and(
+          eq(matches.id, matchId),
+          eq(matches.group, groupId),
+          isNull(matches.deleted)
+        )
+      )
+      .orderBy(desc(matches.created))
+      .then((p) => p.at(0));
+  }
 
-  // si no hay, creo uno
   if (!match) {
-    return createMatch(groupId);
+    return null;
   }
 
   // busco los equipos
