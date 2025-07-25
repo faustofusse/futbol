@@ -46,7 +46,7 @@ export default async function RootLayout({
     session.matchId ?? 0
   );
   return (
-    <>
+    <div className="min-w-[1000px] overflow-hidden">
       <NavBar
         groups={groupsArray}
         matches={matchesArray}
@@ -55,6 +55,6 @@ export default async function RootLayout({
         userId={session.userId}
       />
       <main className="flex flex-col items-center mt-3">{children}</main>
-    </>
+    </div>
   );
 }
