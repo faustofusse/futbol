@@ -46,7 +46,7 @@ export default async function RootLayout({
     session.matchId ?? 0
   );
   return (
-    <div className="min-w-[1000px] overflow-hidden">
+    <div className="min-w-[1000px]">
       <NavBar
         groups={groupsArray}
         matches={matchesArray}
