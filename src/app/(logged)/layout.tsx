@@ -6,7 +6,7 @@ import { getSession } from "@/lib/sessions";
 import { and, isNull, eq, getTableColumns } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getCurrentMatch } from "./groups/[groupId]/matches/actions";
-
+// fausto gay
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
